@@ -19,8 +19,20 @@ export interface TranscribeOptions {
   modelTtl?: number;
   /** Return word-level timestamps alongside the transcript. Forbidden on whisper-tiny. */
   wordTimestamps?: boolean;
+  /** Enable speaker diarisation (requires pyannote sidecar). Forces wordTimestamps=true internally. */
+  diarize?: boolean;
+  /** Optional speaker count hint passed to pyannote. Improves accuracy when known. */
+  numSpeakers?: number;
   /** Called with progress events during download, load, and transcription. */
   onProgress?: (event: ProgressEvent) => void;
+}
+
+export interface DiarisedSegment {
+  speaker: string;
+  start: number;
+  end: number;
+  text: string;
+  words?: WordTimestamp[];
 }
 
 export interface TranscriptResult {
@@ -34,6 +46,10 @@ export interface TranscriptResult {
   timestamp_note?: string;
   /** True when audio exceeded 20 min and was processed via manual segmentation. */
   segmented?: boolean;
+  /** Speaker-labelled segments — present only when diarize was requested. */
+  segments?: DiarisedSegment[];
+  /** Number of distinct speakers detected — present only when diarize was requested. */
+  speakers_detected?: number;
 }
 
 export interface ModelInfo {

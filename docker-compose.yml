@@ -1,0 +1,14 @@
+services:
+  transcribe:
+    image: vinnyvinnyvinny/local-transcribe:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - WHISPER_CACHE_DIR=/data/whisper-models
+    volumes:
+      - transcribe-models:/data
+    restart: unless-stopped
+
+volumes:
+  transcribe-models:

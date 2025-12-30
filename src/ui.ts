@@ -352,6 +352,38 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 .word-chip:hover { border-color: #a0aec0; background: #edf2f7; }
 .chip-word { font-size: 13px; color: var(--text); }
 .chip-ts { font-size: 10px; color: var(--muted); font-family: ui-monospace, monospace; white-space: nowrap; }
+.diarize-state-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  gap: 8px;
+  color: var(--muted);
+}
+.segment-area {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.segment {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.segment:last-child { border-bottom: none; }
+.segment-header { display: flex; align-items: center; gap: 9px; margin-bottom: 5px; }
+.segment-speaker {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 8px; border-radius: 20px;
+  color: #fff; flex-shrink: 0;
+}
+.segment-time { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+.segment-text { font-size: 15px; line-height: 1.65; }
+#numSpeakersRow { margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -381,6 +413,11 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
       <span class="badge" id="ttlBadge" style="display:none"></span>
       <button class="btn-unload" id="unloadBtn" style="display:none">Unload</button>
     </div>
+  </div>
+
+  <div class="diarize-state-bar" id="diarizeStateBar" style="display:none">
+    <div class="dot" id="diarizeDot"></div>
+    <span id="diarizeStateTxt"></span>
   </div>
 
   <div class="card">
@@ -423,6 +460,17 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         <span class="toggle-track"></span>
         <span>Word timestamps</span>
       </label>
+      <label class="toggle">
+        <input type="checkbox" id="diarizeToggle">
+        <span class="toggle-track"></span>
+        <span>Diarise speakers</span>
+      </label>
+    </div>
+    <div id="numSpeakersRow" class="row" style="display:none">
+      <div class="field">
+        <label for="numSpeakersInput">Number of speakers (optional \\u2014 improves accuracy when known)</label>
+        <input type="number" id="numSpeakersInput" placeholder="Auto-detect" min="1" max="20">
+      </div>
     </div>
   </div>
 
@@ -459,6 +507,13 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         <span class="word-timing-note" id="wordTimingNote"></span>
       </div>
       <div class="word-chips" id="wordChips"></div>
+    </div>
+    <div class="segment-area" id="segmentArea" style="display:none">
+      <div class="word-timing-header">
+        <span class="word-timing-label">Speakers</span>
+        <span class="word-timing-note" id="speakerCount"></span>
+      </div>
+      <div id="segmentList"></div>
     </div>
     <div class="meta" id="meta" style="display:none">
       <span><b>Duration</b> <span id="mDur">\\u2014</span></span>
@@ -505,8 +560,24 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   var svcLabel        = document.getElementById('svcLabel');
   var queueBadge      = document.getElementById('queueBadge');
   var modelsList      = document.getElementById('modelsList');
-  var langInput       = document.getElementById('langInput');
-  var langDrop        = document.getElementById('langDrop');
+  var langInput        = document.getElementById('langInput');
+  var langDrop         = document.getElementById('langDrop');
+  var diarizeToggle    = document.getElementById('diarizeToggle');
+  var numSpeakersRow   = document.getElementById('numSpeakersRow');
+  var numSpeakersInput = document.getElementById('numSpeakersInput');
+  var diarizeStateBar  = document.getElementById('diarizeStateBar');
+  var diarizeDot       = document.getElementById('diarizeDot');
+  var diarizeStateTxt  = document.getElementById('diarizeStateTxt');
+  var segmentArea      = document.getElementById('segmentArea');
+  var segmentList      = document.getElementById('segmentList');
+  var speakerCount     = document.getElementById('speakerCount');
+  var SPEAKER_COLORS   = ['#4f46e5','#059669','#d97706','#dc2626','#7c3aed','#0284c7'];
+  var speakerColorMap  = {};
+  var currentSegments  = null;
+
+  diarizeToggle.addEventListener('change', function() {
+    numSpeakersRow.style.display = diarizeToggle.checked ? 'block' : 'none';
+  });
 
   // Full Whisper language list, sorted A-Z
   var LANGS = [
@@ -651,6 +722,33 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     ttlBadge.textContent = lbl.text;
     ttlBadge.className = lbl.cls;
     ttlBadge.style.display = 'inline-block';
+    var dz = d.diarization;
+    if (dz) {
+      diarizeStateBar.style.display = 'flex';
+      var dzStatus = dz.status || 'not_setup';
+      if (dzStatus === 'ready') {
+        diarizeDot.className = 'dot ok';
+        diarizeStateTxt.textContent = 'Diarisation ready';
+      } else if (dzStatus === 'starting') {
+        diarizeDot.className = 'dot';
+        diarizeStateTxt.textContent = 'Diarisation starting\\u2026';
+      } else if (dzStatus === 'not_setup') {
+        diarizeDot.className = 'dot';
+        diarizeStateTxt.textContent = 'Diarisation: run \\u2018transcribe diarize-setup\\u2019 to enable';
+      } else if (dzStatus === 'token_missing') {
+        diarizeDot.className = 'dot err';
+        diarizeStateTxt.textContent = 'Diarisation: HuggingFace token missing \\u2014 run diarize-setup';
+      } else if (dzStatus === 'python_missing') {
+        diarizeDot.className = 'dot err';
+        diarizeStateTxt.textContent = 'Diarisation: Python not found';
+      } else if (dzStatus === 'error') {
+        diarizeDot.className = 'dot err';
+        diarizeStateTxt.textContent = 'Diarisation: sidecar error \\u2014 try restarting';
+      } else {
+        diarizeDot.className = 'dot';
+        diarizeStateTxt.textContent = 'Diarisation: ' + dzStatus;
+      }
+    }
   }
 
   function pollHealth() {
@@ -932,10 +1030,67 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     wordTimingArea.style.display = 'block';
   }
 
+  function speakerColor(speaker) {
+    if (!speakerColorMap[speaker]) {
+      var idx = Object.keys(speakerColorMap).length % SPEAKER_COLORS.length;
+      speakerColorMap[speaker] = SPEAKER_COLORS[idx];
+    }
+    return speakerColorMap[speaker];
+  }
+
+  function renderSegments(segments, detected) {
+    segmentList.innerHTML = '';
+    speakerCount.textContent = detected + ' speaker' + (detected !== 1 ? 's' : '') + ' detected';
+    segments.forEach(function(seg) {
+      var div = document.createElement('div');
+      div.className = 'segment';
+
+      var header = document.createElement('div');
+      header.className = 'segment-header';
+
+      var badge = document.createElement('span');
+      badge.className = 'segment-speaker';
+      badge.style.background = speakerColor(seg.speaker);
+      badge.textContent = seg.speaker.replace('_', '\\u00A0');
+
+      var time = document.createElement('span');
+      time.className = 'segment-time';
+      time.textContent = fmtTs(seg.start) + '\\u2013' + fmtTs(seg.end);
+
+      header.appendChild(badge);
+      header.appendChild(time);
+
+      var text = document.createElement('div');
+      text.className = 'segment-text';
+      text.textContent = seg.text;
+
+      div.appendChild(header);
+      div.appendChild(text);
+      segmentList.appendChild(div);
+    });
+    segmentArea.style.display = 'block';
+  }
+
   function handleComplete(ev, model, lang) {
-    transcript = ev.transcript || '';
-    result.className = 'result-area' + (transcript ? '' : ' empty');
-    result.textContent = transcript || '(empty transcript)';
+    if (ev.segments && ev.segments.length > 0) {
+      currentSegments = ev.segments;
+      transcript = ev.segments.map(function(s) { return s.speaker + ': ' + s.text; }).join('\\n');
+      result.className = 'result-area empty';
+      result.textContent = '';
+      renderSegments(ev.segments, ev.speakers_detected || ev.segments.length);
+      wordTimingArea.style.display = 'none';
+    } else {
+      currentSegments = null;
+      transcript = ev.transcript || '';
+      result.className = 'result-area' + (transcript ? '' : ' empty');
+      result.textContent = transcript || '(empty transcript)';
+      segmentArea.style.display = 'none';
+      if (ev.words && ev.words.length > 0) {
+        renderWords(ev.words, ev.timestamp_note || null);
+      } else {
+        wordTimingArea.style.display = 'none';
+      }
+    }
     document.getElementById('mDur').textContent  = (ev.duration_ms / 1000).toFixed(1) + 's';
     document.getElementById('mMod').textContent  = ev.model_used || model;
     document.getElementById('mLang').textContent = ev.language || lang || 'auto';
@@ -944,11 +1099,6 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     copyBtn.style.display = 'inline-block';
     downloadBtn.style.display = 'inline-block';
     goBtn.disabled = false;
-    if (ev.words && ev.words.length > 0) {
-      renderWords(ev.words, ev.timestamp_note || null);
-    } else {
-      wordTimingArea.style.display = 'none';
-    }
     pollHealth();
     fetchModels();
   }
@@ -969,12 +1119,19 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     var lang  = langSel.value;
     var wantsStream = streamToggle.checked;
     var wantsTimestamps = timestampToggle.checked;
+    var wantsDiarize = diarizeToggle.checked;
+    var numSpk = numSpeakersInput.value.trim();
     var ttlVal = ttlInput.value.trim();
 
     var params = new URLSearchParams();
     if (model) params.set('model', model);
     if (lang && lang !== 'auto') params.set('language', lang);
-    if (wantsTimestamps) params.set('timestamps', 'word');
+    if (wantsDiarize) {
+      params.set('diarize', 'true');
+      if (numSpk) params.set('num_speakers', numSpk);
+    } else if (wantsTimestamps) {
+      params.set('timestamps', 'word');
+    }
     if (ttlVal !== '') params.set('model_ttl', ttlVal);
     if (wantsStream) params.set('stream', 'true');
 
@@ -983,6 +1140,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     fd.append('file', blob, blob.name || 'recording.webm');
     goBtn.disabled = true;
     wordTimingArea.style.display = 'none';
+    segmentArea.style.display = 'none';
+    speakerColorMap = {};
+    currentSegments = null;
     meta.style.display = 'none';
     copyBtn.style.display = 'none';
     downloadBtn.style.display = 'none';

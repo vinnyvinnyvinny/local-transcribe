@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.11] — 2026-08-01
+
+### Changed
+
+- **Docker Compose setup** — `docker-compose.yml` no longer includes a `build: .` directive, so users who download only the compose file (without the source) can run `docker compose up -d` immediately without errors. The image is pulled from Docker Hub.
+- **Added `.env.example`** — template config file for docker compose users. Copy to `.env` and fill in `HF_TOKEN` to enable speaker diarisation; leave blank to skip. Includes inline instructions on where to get a HuggingFace token.
+- **README — docker compose quick start** — new top-level section with a 3-step setup flow: download compose file + `.env.example`, optionally add HuggingFace token, then `docker compose up -d` / `docker compose down`.
+
+---
+
 ## [1.2.10] — 2026-06-30
 
 ### Security

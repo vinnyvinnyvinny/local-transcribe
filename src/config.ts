@@ -15,12 +15,18 @@ export interface ServiceConfig {
    * -1   — persistent: never auto-dispose; requires explicit POST /models/unload
    */
   model_ttl: number;
+  /** HuggingFace token for pyannote model download (alternative to HF_TOKEN env var). */
+  hf_token?: string;
+  /** Port the pyannote sidecar listens on (default: 9001). */
+  sidecar_port?: number;
 }
 
 const DEFAULT_CONFIG: ServiceConfig = {
-  port: 9876,
+  // PORT env var allows Docker / container deployments to override without a config file.
+  port: process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 9876,
   default_model: 'whisper-medium',
-  cache_dir: join(homedir(), '.transcribe', 'models'),
+  // WHISPER_CACHE_DIR allows Docker volumes to override the default cache location.
+  cache_dir: process.env['WHISPER_CACHE_DIR'] ?? join(homedir(), '.transcribe', 'models'),
   language: 'auto',
   device: 'auto',
   model_ttl: 0,

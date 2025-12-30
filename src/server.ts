@@ -6,6 +6,8 @@ import { KNOWN_MODELS, modelByName, isModelDownloaded } from './models.js';
 import { WhisperBackend } from './backends/whisper.js';
 import type { ProgressEvent } from './backends/types.js';
 import { ERR_TINY_MODEL, ERR_BUG551 } from './backends/whisper.js';
+import { PyannoteSidecar } from './sidecar/manager.js';
+import { alignWordsToDiarisation } from './diarize.js';
 import { UI_HTML } from './ui.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -21,6 +23,16 @@ try {
 
 const backend = new WhisperBackend();
 const mutex = new Mutex();
+
+// Sidecar singleton — instantiated lazily on first diarize request so config is available.
+let sidecar: PyannoteSidecar | null = null;
+
+function getSidecar(port: number, hfToken?: string): PyannoteSidecar {
+  if (!sidecar) {
+    sidecar = new PyannoteSidecar(port, hfToken);
+  }
+  return sidecar;
+}
 
 // Track in-progress model pulls so GET /models can surface them.
 const pulling = new Set<string>();
@@ -46,11 +58,18 @@ export function createServer() {
 
   server.get('/health', async () => {
     const config = await loadConfig();
+    const sc = getSidecar(config.sidecar_port ?? 9001, config.hf_token);
+    const scStatus = sc.getStatus();
     return {
       status: 'ok',
       version,
       loaded_model: backend.loadedModel(),
       config,
+      diarization: {
+        available: scStatus === 'ready',
+        status: scStatus,
+        sidecar_pid: sc.getSidecarPid(),
+      },
     };
   });
 
@@ -136,6 +155,9 @@ export function createServer() {
     const language = query['language'] ?? config.language;
     const wantsStream = query['stream'] === 'true';
     const wantsWordTimestamps = query['timestamps'] === 'word';
+    const wantsDiarize = query['diarize'] === 'true';
+    const numSpeakersRaw = query['num_speakers'] !== undefined ? parseInt(query['num_speakers'], 10) : undefined;
+    const numSpeakers = numSpeakersRaw !== undefined && !isNaN(numSpeakersRaw) ? numSpeakersRaw : undefined;
     const ttlOverride = query['model_ttl'] !== undefined ? parseInt(query['model_ttl'], 10) : undefined;
     const modelTtl = ttlOverride !== undefined && !isNaN(ttlOverride) ? ttlOverride : config.model_ttl;
 
@@ -145,11 +167,24 @@ export function createServer() {
     }
 
     // Word timestamps: reject tiny model before queuing — no point holding up the queue.
-    if (wantsWordTimestamps && modelName === 'whisper-tiny') {
+    if ((wantsWordTimestamps || wantsDiarize) && modelName === 'whisper-tiny') {
       return reply.status(400).send({
         error: 'whisper-tiny does not support word-level timestamps. Use whisper-base or larger.',
         code: 'model_too_small',
       });
+    }
+
+    // Diarisation readiness check — before queuing to give instant 503 feedback.
+    if (wantsDiarize) {
+      const sc = getSidecar(config.sidecar_port ?? 9001, config.hf_token);
+      const scStatus = sc.getStatus();
+      // Only block on states that won't resolve by ensureReady().
+      if (scStatus === 'not_setup' || scStatus === 'python_missing' || scStatus === 'token_missing') {
+        return reply.status(503).send({
+          error: 'Diarisation is not set up. Run: transcribe diarize-setup',
+          diarization_status: scStatus,
+        });
+      }
     }
 
     const chunks: Buffer[] = [];
@@ -190,15 +225,62 @@ export function createServer() {
 
     const release = await mutex.acquire();
     try {
+      // Diarisation: ensureReady() may take up to 30s on first call (sidecar cold start).
+      // GET /health reflects "starting" status during this window.
+      if (wantsDiarize) {
+        const sc = getSidecar(config.sidecar_port ?? 9001, config.hf_token);
+        try {
+          await sc.ensureReady();
+        } catch (err) {
+          const scStatus = sc.getStatus();
+          serviceStatus = { status: 'idle' };
+          const errReply = {
+            error: `Diarisation is not set up. Run: transcribe diarize-setup`,
+            diarization_status: scStatus,
+          };
+          if (wantsStream) { reply.raw.write(sseEvent({ status: 'error', ...errReply })); reply.raw.end(); return reply; }
+          return reply.status(503).send(errReply);
+        }
+      }
+
+      // Diarisation forces word timestamps internally.
+      const needsWordTimestamps = wantsWordTimestamps || wantsDiarize;
+
       const result = await backend.transcribe(audioBuffer, {
         model: modelName,
         language,
         cacheDir: config.cache_dir,
         device: config.device,
         modelTtl,
-        wordTimestamps: wantsWordTimestamps,
+        wordTimestamps: needsWordTimestamps,
         onProgress: emit,
       });
+
+      // Diarisation: call sidecar and align words to speaker segments.
+      if (wantsDiarize && result.words && result.words.length > 0) {
+        const sc = getSidecar(config.sidecar_port ?? 9001, config.hf_token);
+        const diarizeResult = await sc.diarize(audioBuffer, numSpeakers);
+        const includeWords = wantsWordTimestamps; // only include words[] in segments if user also asked for timestamps
+        const alignedSegments = alignWordsToDiarisation(result.words, diarizeResult.segments, includeWords);
+
+        const diarizedResult = {
+          segments: alignedSegments,
+          speakers_detected: diarizeResult.speakers_detected,
+          duration_ms: result.duration_ms,
+          model_used: result.model_used,
+          language: result.language,
+          ...(result.timestamp_note ? { timestamp_note: result.timestamp_note } : {}),
+          ...(result.segmented ? { segmented: result.segmented } : {}),
+        };
+
+        serviceStatus = { status: 'idle' };
+        if (wantsStream) {
+          reply.raw.write(sseEvent({ status: 'complete', ...diarizedResult }));
+          reply.raw.end();
+          return reply;
+        }
+        return diarizedResult;
+      }
 
       serviceStatus = { status: 'idle' };
 
@@ -252,6 +334,16 @@ export async function startServer(port?: number): Promise<void> {
   const config = await loadConfig();
   const listenPort = port ?? config.port;
   const server = createServer();
-  await server.listen({ port: listenPort, host: '127.0.0.1' });
-  console.log(`[server] Transcription service listening on http://127.0.0.1:${listenPort}`);
+
+  // Shut down sidecar on server close.
+  server.addHook('onClose', async () => {
+    if (sidecar) {
+      sidecar.stop();
+    }
+  });
+
+  // In Docker environments bind to all interfaces; otherwise loopback only.
+  const host = process.env['DOCKER_ENV'] === '1' || process.env['HOST'] === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1';
+  await server.listen({ port: listenPort, host });
+  console.log(`[server] Transcription service listening on http://${host}:${listenPort}`);
 }
