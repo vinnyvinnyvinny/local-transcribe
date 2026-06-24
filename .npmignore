@@ -1,0 +1,25 @@
+node_modules/
+src/
+.env
+*.env.local
+.transcribe/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+*.tgz
+
+# CI config — irrelevant to npm consumers
+.github/
+
+# PM and project documentation — stored in the vault, not the package
+decisions.md
+plan.md
+risks.md
+status.md
+v1-test-checklist.md
+v2-design.md
+Project Memory.md
+Local Transcription Service*.md
+test-cli.sh

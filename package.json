@@ -1,0 +1,55 @@
+{
+  "name": "@vinnyvinnyvinny/local-transcribe",
+  "version": "1.2.8",
+  "description": "Lightweight local HTTP transcription service powered by Whisper — converts audio to text via a simple REST API",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "transcribe": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "transcription",
+    "whisper",
+    "speech-to-text",
+    "audio",
+    "local",
+    "offline",
+    "api"
+  ],
+  "author": "vinnyvinnyvinny",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinnyvinnyvinny/local-transcribe.git"
+  },
+  "homepage": "https://github.com/vinnyvinnyvinny/local-transcribe#readme",
+  "bugs": {
+    "url": "https://github.com/vinnyvinnyvinny/local-transcribe/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^8.3.0",
+    "@xenova/transformers": "^2.17.2",
+    "async-mutex": "^0.5.0",
+    "commander": "^12.1.0",
+    "cosmiconfig": "^9.0.0",
+    "fastify": "^4.28.1",
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
