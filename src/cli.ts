@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, basename } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -177,6 +177,59 @@ program
     const { loadConfig } = await import('./config.js');
     const config = await loadConfig();
     console.log(JSON.stringify(config, null, 2));
+  });
+
+program
+  .command('file <audio>')
+  .description('Transcribe an audio or video file (service must be running)')
+  .option('-o, --output <path>', 'Write transcript to file instead of stdout')
+  .option('-m, --model <model>', 'Override the default model for this request')
+  .option('--format <format>', 'Output format: txt or json', 'txt')
+  .option('--timestamps', 'Request word-level timestamps (requires whisper-base or larger)')
+  .action(async (audioPath: string, options) => {
+    const resolvedPath = resolve(audioPath);
+    if (!existsSync(resolvedPath)) {
+      console.error(`File not found: ${resolvedPath}`);
+      process.exit(1);
+    }
+
+    const { loadConfig } = await import('./config.js');
+    const config = await loadConfig();
+
+    const url = new URL(`http://127.0.0.1:${config.port}/transcribe`);
+    if (options.model) url.searchParams.set('model', options.model);
+    if (options.timestamps) url.searchParams.set('timestamps', 'word');
+
+    const buffer = readFileSync(resolvedPath);
+    const form = new FormData();
+    form.append('audio', new Blob([buffer]), basename(resolvedPath));
+
+    let res: Response;
+    try {
+      res = await fetch(url.toString(), { method: 'POST', body: form });
+    } catch {
+      console.error(`Could not reach service at http://127.0.0.1:${config.port}. Is it running? Use: transcribe start`);
+      process.exit(1);
+      return;
+    }
+
+    const data = await res.json() as Record<string, unknown>;
+
+    if (!res.ok) {
+      console.error(typeof data.error === 'string' ? data.error : `HTTP ${res.status}`);
+      process.exit(1);
+    }
+
+    const output = options.format === 'json'
+      ? JSON.stringify(data, null, 2)
+      : String(data.transcript ?? '');
+
+    if (options.output) {
+      writeFileSync(options.output, output, 'utf-8');
+      process.stderr.write(`Saved to ${options.output}\n`);
+    } else {
+      process.stdout.write(output + '\n');
+    }
   });
 
 program.parse(process.argv);

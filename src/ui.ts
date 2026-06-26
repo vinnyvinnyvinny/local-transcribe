@@ -447,7 +447,10 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   <div class="card">
     <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">
       <span>Transcript</span>
-      <button class="copy-btn" id="copyBtn" style="display:none">Copy</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="copy-btn" id="downloadBtn" style="display:none">Download</button>
+        <button class="copy-btn" id="copyBtn" style="display:none">Copy</button>
+      </div>
     </div>
     <div class="result-area empty" id="result">Transcript will appear here.</div>
     <div class="word-timing-area" id="wordTimingArea" style="display:none">
@@ -481,6 +484,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   var result          = document.getElementById('result');
   var meta            = document.getElementById('meta');
   var copyBtn         = document.getElementById('copyBtn');
+  var downloadBtn     = document.getElementById('downloadBtn');
   var modelSel        = document.getElementById('modelSel');
   var langSel         = document.getElementById('langSel');
   var ttlInput        = document.getElementById('ttlInput');
@@ -938,6 +942,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     mSegmented.style.display = ev.segmented ? 'inline' : 'none';
     meta.style.display = 'flex';
     copyBtn.style.display = 'inline-block';
+    downloadBtn.style.display = 'inline-block';
     goBtn.disabled = false;
     if (ev.words && ev.words.length > 0) {
       renderWords(ev.words, ev.timestamp_note || null);
@@ -980,6 +985,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     wordTimingArea.style.display = 'none';
     meta.style.display = 'none';
     copyBtn.style.display = 'none';
+    downloadBtn.style.display = 'none';
     setStatus('Starting\\u2026');
 
     if (!wantsStream) {
@@ -1043,6 +1049,19 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
       copyBtn.textContent = 'Copied!';
       setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
     });
+  });
+
+  downloadBtn.addEventListener('click', function() {
+    if (!transcript) return;
+    var dlBlob = new Blob([transcript], { type: 'text/plain' });
+    var url = URL.createObjectURL(dlBlob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'transcript.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 })();
 </script>

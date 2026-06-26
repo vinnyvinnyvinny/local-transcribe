@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Local Transcription Service — CLI Test Script
-# Version: 1.2.8
+# Version: 1.2.9
 # Usage: bash test-cli.sh
 
 set -uo pipefail
@@ -76,10 +76,10 @@ wait_for_service() {
 section "1. Version check"
 # ═══════════════════════════════════════════════════════════════════════════════
 
-expect "1.2.8"
+expect "1.2.9"
 VERSION=$(transcribe --version 2>&1)
 actual "$VERSION"
-if echo "$VERSION" | grep -q "1.2.8"; then
+if echo "$VERSION" | grep -q "1.2.9"; then
   pass "transcribe --version"
 else
   fail "transcribe --version — got: $VERSION"
@@ -107,10 +107,10 @@ fi
 section "3. Health check"
 # ═══════════════════════════════════════════════════════════════════════════════
 
-expect '{"status":"ok","version":"1.2.8"}'
+expect '{"status":"ok","version":"1.2.9"}'
 HEALTH=$(curl -sf http://localhost:9876/health)
 actual "$HEALTH"
-if echo "$HEALTH" | grep -q '"status":"ok"' && echo "$HEALTH" | grep -q '"version":"1.2.8"'; then
+if echo "$HEALTH" | grep -q '"status":"ok"' && echo "$HEALTH" | grep -q '"version":"1.2.9"'; then
   pass "GET /health"
 else
   fail "GET /health — got: $HEALTH"
@@ -335,6 +335,31 @@ else
   else
     fail "Long audio → no transcript. Got: $(echo "$LONG_RESP" | head -c 200)"
   fi
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+section "19. CLI: transcribe file"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+expect "transcribe file <audio> prints transcript to stdout"
+note "Using: $SHORT_AUDIO"
+FILE_OUT=$(transcribe file "$SHORT_AUDIO" --model whisper-tiny 2>&1)
+actual "$(echo "$FILE_OUT" | head -c 300)"
+if [[ -n "$FILE_OUT" ]]; then
+  pass "transcribe file → stdout output received"
+else
+  fail "transcribe file → no output"
+fi
+
+expect "transcribe file --output <path> writes transcript to file"
+TRANSCRIPT_FILE="/tmp/cli-transcript-test.txt"
+rm -f "$TRANSCRIPT_FILE"
+transcribe file "$SHORT_AUDIO" --model whisper-tiny --output "$TRANSCRIPT_FILE" 2>&1
+if [[ -f "$TRANSCRIPT_FILE" && -s "$TRANSCRIPT_FILE" ]]; then
+  note "File contents: $(cat "$TRANSCRIPT_FILE" | head -c 200)"
+  pass "transcribe file --output → file written with content"
+else
+  fail "transcribe file --output → file not written or empty"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

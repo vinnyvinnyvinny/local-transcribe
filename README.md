@@ -368,9 +368,40 @@ transcribe pull whisper-medium # Pre-download a model
 transcribe models              # List models and download status
 transcribe unload              # Unload the model from memory (persistent/keep-warm mode)
 transcribe config              # Print current config
+transcribe file <audio>        # Transcribe a file from the command line
 ```
 
 `transcribe unload` contacts the running service and releases the loaded model from RAM. Useful when you ran the service in persistent (`model_ttl: -1`) or keep-warm mode and want to reclaim memory without restarting.
+
+### `transcribe file <audio>`
+
+Transcribe an audio or video file from the command line. The service must be running (`transcribe start`).
+
+```bash
+# Print transcript to stdout
+transcribe file recording.mp3
+
+# Save transcript to a file
+transcribe file recording.mp4 --output transcript.txt
+
+# Use a specific model
+transcribe file interview.m4a --model whisper-large --output notes.txt
+
+# Full JSON response (includes duration, model, language)
+transcribe file podcast.mp3 --format json
+
+# Word-level timestamps (whisper-base or larger required)
+transcribe file lecture.wav --timestamps --format json --output lecture.json
+```
+
+**Options:**
+
+| Flag | Description |
+|------|-------------|
+| `-o, --output <path>` | Write transcript to file instead of stdout |
+| `-m, --model <model>` | Override the default model for this request |
+| `--format txt\|json` | Output format: `txt` (transcript only) or `json` (full response with duration, model, language). Default: `txt` |
+| `--timestamps` | Include word-level timestamps. Requires `whisper-base` or larger; use with `--format json` to see timing data |
 
 ## Usage examples
 

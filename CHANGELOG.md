@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.9] — 2026-06-26
+
+### Added
+
+- **`transcribe file <audio>`** — transcribe an audio or video file directly from the CLI (the service must be running). Options: `--output <path>` to write the transcript to a file, `--model <model>` to override the default model, `--format txt|json` for output format (default: `txt`), `--timestamps` for word-level timing data.
+- **Browser UI: Download button** — a Download button appears next to Copy in the Transcript card after transcription completes. Saves the transcript as `transcript.txt`.
+
+---
+
 ## [1.2.8] — 2026-06-24
 
 ### Changed
