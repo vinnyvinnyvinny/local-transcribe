@@ -1,6 +1,6 @@
 {
   "name": "@vinnyvinnyvinny/local-transcribe",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Lightweight local HTTP transcription service powered by Whisper — converts audio to text via a simple REST API",
   "type": "module",
   "main": "dist/index.js",
@@ -39,13 +39,16 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@fastify/multipart": "^8.3.0",
+    "@fastify/multipart": "^9.0.0",
     "@xenova/transformers": "^2.17.2",
     "async-mutex": "^0.5.0",
     "commander": "^12.1.0",
     "cosmiconfig": "^9.0.0",
-    "fastify": "^4.28.1",
+    "fastify": "^5.9.0",
     "ffmpeg-static": "^5.2.0"
+  },
+  "overrides": {
+    "protobufjs": "^7.6.3"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

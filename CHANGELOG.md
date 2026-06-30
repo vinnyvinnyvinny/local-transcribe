@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.10] — 2026-06-30
+
+### Security
+
+- **fastify upgraded v4 → v5.9.0** — resolves two HIGH CVEs in `fast-uri` (path traversal via percent-encoded dot segments, GHSA-q3j6-qgpj-74h6; host confusion via percent-encoded authority delimiters, GHSA-v39h-62p7-jpjc). `@fastify/multipart` upgraded v8 → v9 for fastify v5 compatibility.
+- **protobufjs forced to 7.6.4 via `overrides`** — resolves 11 CRITICAL/HIGH CVEs in the `@xenova/transformers → onnxruntime-web → onnx-proto → protobufjs` chain (code injection, prototype pollution, DoS, arbitrary code execution). The `overrides` field in `package.json` forces npm to install protobufjs 7.6.4 in place of the vulnerable 6.x version pulled in by `onnx-proto`. `@xenova/transformers` remains at 2.17.2 — no functional changes.
+- `npm audit` now reports **0 vulnerabilities**.
+
+---
+
 ## [1.2.9] — 2026-06-26
 
 ### Added
