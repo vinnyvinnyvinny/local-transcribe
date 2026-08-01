@@ -9,9 +9,9 @@ RUN pip install --no-cache-dir \
     "torchaudio==2.3.1"
 RUN pip install --no-cache-dir \
     "pyannote.audio>=3.0,<4.0" \
+    "huggingface_hub>=0.13,<0.22" \
     fastapi \
-    "uvicorn[standard]" \
-    huggingface-hub
+    "uvicorn[standard]"
 
 # Stage 2: Node build
 FROM node:20-slim AS node-build

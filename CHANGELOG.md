@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.19] — 2026-08-01
+
+### Fixed
+
+- **`hf_hub_download() got an unexpected keyword argument 'use_auth_token'`** — pinned `huggingface_hub<0.22` in the Dockerfile. pyannote.audio 3.x internally calls `hf_hub_download(use_auth_token=...)` — this API was removed in huggingface_hub ~0.22. Without an upper bound, pip installs the latest version (~0.26+) which no longer accepts the parameter. The pin keeps huggingface_hub in the range that pyannote.audio 3.x was tested against.
+
+---
+
 ## [1.2.18] — 2026-08-01
 
 ### Fixed
