@@ -201,15 +201,13 @@ export class PyannoteSidecar {
       url.searchParams.set('num_speakers', String(numSpeakers));
     }
 
-    const form = new FormData();
-    // Copy bytes into a plain ArrayBuffer to satisfy strict Blob typing.
-    const ab = new ArrayBuffer(audioBuffer.byteLength);
-    new Uint8Array(ab).set(new Uint8Array(audioBuffer));
-    form.append('audio', new Blob([ab]), 'audio.wav');
-
+    // Send raw bytes rather than multipart — python-multipart 0.0.20+ has a default
+    // max_file_size of ~5 MB which causes a mid-upload 400 on larger files, manifesting
+    // as EPIPE on this side. Raw body has no such limit.
     const res = await fetch(url.toString(), {
       method: 'POST',
-      body: form,
+      body: audioBuffer,
+      headers: { 'Content-Type': 'application/octet-stream' },
       signal: AbortSignal.timeout(120_000), // 2-min timeout for long files
     });
 

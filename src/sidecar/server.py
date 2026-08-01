@@ -3,19 +3,20 @@
 Pyannote speaker diarisation sidecar.
 
 Endpoints:
-  POST /diarize  — multipart audio file, optional ?num_speakers=N
+  POST /diarize  — raw audio body, optional ?num_speakers=N
   GET  /health   — liveness probe
 """
 
 import argparse
 import os
+import subprocess
 import sys
 import tempfile
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 
@@ -72,25 +73,40 @@ async def health():
 
 @app.post("/diarize")
 async def diarize(
-    audio: UploadFile = File(...),
+    request: Request,
     num_speakers: Optional[int] = Query(default=None, ge=1),
 ):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Pipeline not loaded")
 
-    # Write upload to a temp file — pyannote needs a real path.
-    suffix = os.path.splitext(audio.filename or "audio.wav")[1] or ".wav"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+    # Read raw bytes — avoids python-multipart file-size limits (default 5–10 MB in 0.0.20+)
+    # which cause a mid-upload 400 that manifests as EPIPE on the Node.js side.
+    content = await request.body()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty audio body")
+
+    # Write to temp file, then convert to 16 kHz mono WAV via ffmpeg.
+    # This handles any input format (MP3, WebM, OGG, etc.) reliably — torchaudio
+    # can crash (SIGABRT) when given MP3 bytes in a file with a .wav extension.
+    with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tmp:
         tmp_path = tmp.name
-        content = await audio.read()
         tmp.write(content)
 
+    wav_path = tmp_path + ".wav"
     try:
+        conv = subprocess.run(
+            ["ffmpeg", "-y", "-i", tmp_path, "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
+            capture_output=True,
+        )
+        if conv.returncode != 0:
+            err = conv.stderr.decode("utf-8", errors="replace")[-500:]
+            raise HTTPException(status_code=400, detail=f"Audio conversion failed: {err}")
+
         kwargs = {}
         if num_speakers is not None:
             kwargs["num_speakers"] = num_speakers
 
-        diarization = pipeline(tmp_path, **kwargs)
+        diarization = pipeline(wav_path, **kwargs)
 
         segments = []
         speakers_seen: set = set()
@@ -107,11 +123,17 @@ async def diarize(
             "segments": segments,
             "speakers_detected": len(speakers_seen),
         })
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
         try:
             os.unlink(tmp_path)
+        except OSError:
+            pass
+        try:
+            os.unlink(wav_path)
         except OSError:
             pass
 

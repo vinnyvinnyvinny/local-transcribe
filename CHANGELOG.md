@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.24] — 2026-08-01
+
+### Fixed
+
+- **EPIPE / "fetch failed" on diarize requests > ~5 MB** — `python-multipart` 0.0.20+ enforces a default `max_file_size` of ~5 MB on multipart uploads. The sidecar's `/diarize` endpoint was using `UploadFile` (multipart), so any audio file larger than the limit triggered a 400 rejection mid-upload. From Node.js's perspective, the sidecar closed the TCP connection while the body was still being written → `Error: write EPIPE`. Fix: the sidecar now accepts raw `application/octet-stream` bytes via `request.body()` (no multipart, no size limit). The client in `manager.ts` is updated to match.
+- **Audio format crash (SIGABRT from torchaudio)** — the previous multipart path always named the temp file `audio.wav` regardless of actual content, causing torchaudio to crash at C++ level when given MP3 bytes in a `.wav`-named file. The sidecar now runs ffmpeg to convert any input format to a 16 kHz mono WAV before passing it to pyannote, making it robust to MP3, WebM, OGG, etc.
+
+---
+
 ## [1.2.23] — 2026-08-01
 
 ### Fixed
