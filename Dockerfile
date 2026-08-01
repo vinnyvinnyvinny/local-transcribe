@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir \
     "pyannote.audio>=3.0,<4.0" \
     "huggingface_hub>=0.13,<0.22" \
     fastapi \
-    "uvicorn[standard]"
+    "uvicorn[standard]" \
+    python-multipart
 
 # Stage 2: Node build
 FROM node:20-slim AS node-build

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.20] — 2026-08-01
+
+### Fixed
+
+- **Sidecar crashes: "Form data requires python-multipart to be installed"** — added `python-multipart` to the Dockerfile pip install. FastAPI requires it explicitly for multipart file uploads (`/diarize` endpoint); it is not pulled in transitively.
+
+---
+
 ## [1.2.19] — 2026-08-01
 
 ### Fixed
