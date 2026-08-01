@@ -20,7 +20,11 @@ Open `.env` and fill in your token:
 HF_TOKEN=hf_yourTokenHere
 ```
 
-Get a free token at https://huggingface.co/settings/tokens, then accept model terms at https://huggingface.co/pyannote/speaker-diarization-3.1. You can skip this if you don't need speaker identification.
+Get a free token at https://huggingface.co/settings/tokens, then accept terms for both gated models (one-time browser steps):
+- https://huggingface.co/pyannote/speaker-diarization-3.1
+- https://huggingface.co/pyannote/segmentation-3.0
+
+You can skip this entirely if you don't need speaker identification.
 
 **3. Start the service:**
 
@@ -84,9 +88,11 @@ Response:
 
 Diarisation identifies who said what. It requires a free HuggingFace account.
 
-1. **Accept model terms** at https://huggingface.co/pyannote/speaker-diarization-3.1 (one-time browser step)
+1. **Accept model terms** — the pipeline uses two gated models; both require a one-time click in the browser:
+   - https://huggingface.co/pyannote/speaker-diarization-3.1
+   - https://huggingface.co/pyannote/segmentation-3.0
 2. **Get a token** at https://huggingface.co/settings/tokens
-3. **Run setup:**
+3. **Run setup** (~1 GB download, a few minutes):
 
 For Docker Compose:
 ```bash

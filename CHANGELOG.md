@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.21] — 2026-08-01
+
+### Changed
+
+- **README — diarisation setup requires accepting two gated models** — `speaker-diarization-3.1` depends on `pyannote/segmentation-3.0`, which is also a gated model requiring separate terms acceptance on HuggingFace. Both URLs are now listed in the Quick Start (step 2) and in the Speaker diarisation setup section (step 1). Step 3 note updated to indicate ~1 GB download.
+
+---
+
 ## [1.2.20] — 2026-08-01
 
 ### Fixed
