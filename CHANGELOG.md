@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.22] — 2026-08-01
+
+### Added
+
+- **Environment variable config for Docker** — all service options now readable from env vars, not just `PORT` and `WHISPER_CACHE_DIR`. New variables: `WHISPER_MODEL` (default model), `LANGUAGE` (transcription language), `MODEL_TTL` (model memory lifecycle), `SIDECAR_PORT` (diarisation sidecar port). Env vars take precedence over `~/.transcribe/config.json`.
+- **`.env.example` expanded** — all configurable variables now listed with descriptions, valid values, and inline comments. Previously only `HF_TOKEN` was documented.
+- **README Configuration section updated** — full env var table with defaults and descriptions.
+
+---
+
 ## [1.2.21] — 2026-08-01
 
 ### Changed

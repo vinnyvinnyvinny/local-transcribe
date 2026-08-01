@@ -21,15 +21,18 @@ export interface ServiceConfig {
   sidecar_port?: number;
 }
 
+const VALID_DEVICES = ['auto', 'cpu', 'cuda', 'coreml'] as const;
+
 const DEFAULT_CONFIG: ServiceConfig = {
-  // PORT env var allows Docker / container deployments to override without a config file.
   port: process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 9876,
-  default_model: 'whisper-medium',
-  // WHISPER_CACHE_DIR allows Docker volumes to override the default cache location.
+  default_model: process.env['WHISPER_MODEL'] ?? 'whisper-medium',
   cache_dir: process.env['WHISPER_CACHE_DIR'] ?? join(homedir(), '.transcribe', 'models'),
-  language: 'auto',
-  device: 'auto',
-  model_ttl: 0,
+  language: process.env['LANGUAGE'] ?? 'auto',
+  device: (VALID_DEVICES.includes(process.env['DEVICE'] as ServiceConfig['device'])
+    ? process.env['DEVICE']
+    : 'auto') as ServiceConfig['device'],
+  model_ttl: process.env['MODEL_TTL'] !== undefined ? parseInt(process.env['MODEL_TTL'], 10) : 0,
+  sidecar_port: process.env['SIDECAR_PORT'] ? parseInt(process.env['SIDECAR_PORT'], 10) : undefined,
 };
 
 const CONFIG_PATH = join(homedir(), '.transcribe', 'config.json');

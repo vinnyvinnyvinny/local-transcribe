@@ -128,14 +128,18 @@ Combine with `?timestamps=word` to get per-word timing inside each speaker turn.
 
 ## Configuration
 
-Pass as environment variables to `docker run -e`:
+Set via environment variables — add them to your `.env` file (Docker Compose) or pass with `docker run -e`:
 
 | Variable | Default | Description |
 |---|---|---|
-| PORT | 8080 | HTTP port |
-| HF_TOKEN | — | HuggingFace token (alternative to --token flag) |
-| WHISPER_CACHE_DIR | /data/whisper-models | Model cache location |
-| WHISPER_LOCAL_MODEL | Xenova/whisper-base | Default model |
+| `WHISPER_MODEL` | `whisper-medium` | Default model (`whisper-tiny` / `base` / `small` / `medium` / `large-v3`) |
+| `LANGUAGE` | `auto` | Transcription language (ISO 639-1 code e.g. `en`, `fr`) or `auto` to detect |
+| `MODEL_TTL` | `0` | Seconds to keep model in memory after a request. `0` = unload immediately, `-1` = never unload |
+| `HF_TOKEN` | — | HuggingFace token — required for speaker diarisation |
+| `PORT` | `8080` | Internal container port (host port is set in `docker-compose.yml`) |
+| `WHISPER_CACHE_DIR` | `/data/whisper-models` | Path inside the container where Whisper models are cached |
+
+All settings can also be set in `~/.transcribe/config.json` (npm installs) — environment variables take precedence.
 
 ## Uninstall
 
