@@ -1,6 +1,6 @@
 services:
   transcribe:
-    image: vinnyvinnyvinny/local-transcribe:latest
+    image: ghcr.io/vinnyvinnyvinny/local-transcribe:latest
     ports:
       - "8080:8080"
     environment:

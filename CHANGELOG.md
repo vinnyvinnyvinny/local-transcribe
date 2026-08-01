@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.12] — 2026-08-01
+
+### Changed
+
+- **Docker image registry moved to GitHub Container Registry (ghcr.io)** — image is now `ghcr.io/vinnyvinnyvinny/local-transcribe:latest`. No Docker Hub account required; images are publicly pullable without login. `docker-compose.yml` and README updated throughout.
+- **GitHub Actions workflow added** (`.github/workflows/docker.yml`) — builds and pushes the Docker image to ghcr.io automatically on every push to `main`. Uses `GITHUB_TOKEN` — no secrets to configure.
+
+---
+
 ## [1.2.11] — 2026-08-01
 
 ### Changed

@@ -41,7 +41,7 @@ docker compose down
 ## Quick start (single docker run)
 
 ```bash
-docker run -d --name transcribe -p 8080:8080 -v transcribe-models:/data vinnyvinnyvinny/local-transcribe
+docker run -d --name transcribe -p 8080:8080 -v transcribe-models:/data ghcr.io/vinnyvinnyvinny/local-transcribe
 ```
 
 Open http://localhost:8080 — drag and drop an audio file to transcribe.
