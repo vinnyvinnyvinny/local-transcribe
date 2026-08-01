@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.18] — 2026-08-01
+
+### Fixed
+
+- **`Pipeline.from_pretrained() got an unexpected keyword argument 'token'`** — pyannote.audio 3.x uses `use_auth_token`, not `token`. The `token` rename (from v1.2.15) was correct for pyannote 4.x but wrong for 3.x. Reverted in both `server.py` and `cli.ts` to match the 3.x API. (pyannote 4.x was the version that introduced `token`; the Dockerfile is pinned to 3.x since v1.2.17.)
+
+---
+
 ## [1.2.17] — 2026-08-01
 
 ### Fixed
