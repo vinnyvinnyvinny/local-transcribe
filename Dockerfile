@@ -1,5 +1,12 @@
 # Stage 1: Python deps
 FROM python:3.11-slim AS python-deps
+# Pin torch/torchaudio to 2.3.x CPU wheels.
+# torchaudio 2.4+ removed AudioMetaData which pyannote.audio 3.x still uses.
+# CPU-only wheels keep the image ~2 GB smaller than the default CUDA build.
+RUN pip install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cpu \
+    "torch==2.3.1" \
+    "torchaudio==2.3.1"
 RUN pip install --no-cache-dir \
     "pyannote.audio>=3.0,<4.0" \
     fastapi \

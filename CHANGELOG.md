@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.17] — 2026-08-01
+
+### Fixed
+
+- **`torchaudio` has no attribute `AudioMetaData`** — pinned `torch==2.3.1` and `torchaudio==2.3.1` (CPU-only wheels) in the Dockerfile. torchaudio 2.4+ removed `AudioMetaData` from the public API; pyannote.audio 3.x still references it at import time. Using the PyTorch CPU wheel index also reduces the image size by ~2 GB versus the default CUDA build that pip would otherwise download.
+
+---
+
 ## [1.2.16] — 2026-08-01
 
 ### Changed
