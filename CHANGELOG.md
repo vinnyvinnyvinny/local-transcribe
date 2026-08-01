@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.13] — 2026-08-01
+
+### Fixed
+
+- **Browser UI — error details now shown** — when transcription fails, the browser UI now displays the actual error message instead of only "Transcription failed." The error text appears in both the main result area and the error box. Previously, the non-SSE (polling) path discarded the server's `detail` field entirely; the SSE path already forwarded the message but it was easy to miss in the small error box.
+
+---
+
 ## [1.2.12] — 2026-08-01
 
 ### Changed

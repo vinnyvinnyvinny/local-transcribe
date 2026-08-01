@@ -1104,9 +1104,10 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   }
 
   function handleError(msg) {
-    showErr(msg || 'Transcription failed.');
+    var displayMsg = msg || 'Transcription failed.';
+    showErr(displayMsg);
     result.className = 'result-area empty';
-    result.textContent = 'Transcription failed.';
+    result.textContent = displayMsg;
     wordTimingArea.style.display = 'none';
     goBtn.disabled = false;
     pollHealth();
@@ -1151,7 +1152,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     if (!wantsStream) {
       fetch(url, { method: 'POST', body: fd }).then(function(r) {
         return r.json().then(function(d) {
-          if (!r.ok) throw new Error(d.error || 'Request failed');
+          if (!r.ok) throw new Error(d.detail || d.error || 'Request failed');
           return d;
         });
       }).then(function(d) {
@@ -1164,7 +1165,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
     fetch(url, { method: 'POST', body: fd }).then(function(r) {
       if (!r.ok) {
-        return r.json().then(function(d) { throw new Error(d.error || 'Request failed'); });
+        return r.json().then(function(d) { throw new Error(d.detail || d.error || 'Request failed'); });
       }
       var reader = r.body.getReader();
       var decoder = new TextDecoder();
