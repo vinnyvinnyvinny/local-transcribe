@@ -204,9 +204,10 @@ export class PyannoteSidecar {
     // Send raw bytes rather than multipart — python-multipart 0.0.20+ has a default
     // max_file_size of ~5 MB which causes a mid-upload 400 on larger files, manifesting
     // as EPIPE on this side. Raw body has no such limit.
+    // Buffer<ArrayBufferLike> doesn't satisfy BodyInit; Uint8Array does.
     const res = await fetch(url.toString(), {
       method: 'POST',
-      body: audioBuffer,
+      body: new Uint8Array(audioBuffer),
       headers: { 'Content-Type': 'application/octet-stream' },
       signal: AbortSignal.timeout(120_000), // 2-min timeout for long files
     });
