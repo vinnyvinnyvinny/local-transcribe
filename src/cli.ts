@@ -299,7 +299,7 @@ program
       'python3',
       [
         '-c',
-        `from pyannote.audio import Pipeline; Pipeline.from_pretrained('pyannote/speaker-diarization-3.1', use_auth_token='${hfToken}')`,
+        `from pyannote.audio import Pipeline; Pipeline.from_pretrained('pyannote/speaker-diarization-3.1', token='${hfToken}')`,
       ],
       {
         stdio: 'inherit',

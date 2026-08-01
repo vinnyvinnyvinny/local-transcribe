@@ -1,7 +1,7 @@
 # Stage 1: Python deps
 FROM python:3.11-slim AS python-deps
 RUN pip install --no-cache-dir \
-    "pyannote.audio>=4.0" \
+    "pyannote.audio>=3.0,<4.0" \
     fastapi \
     "uvicorn[standard]" \
     huggingface-hub

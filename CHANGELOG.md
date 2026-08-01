@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.15] — 2026-08-01
+
+### Fixed
+
+- **pyannote.audio 4.0 requires TorchCodec (FFmpeg shared libs not in container)** — pinned to `pyannote.audio>=3.0,<4.0`. Version 4.0 introduced a hard dependency on TorchCodec which needs `libavutil.so` and `libpython3.11.so.1.0` — neither available in the slim Docker base. Version 3.x runs the speaker-diarization-3.1 model without TorchCodec.
+- **`use_auth_token` removed from HuggingFace Hub API** — `Pipeline.from_pretrained()` calls updated to use `token=` (the current parameter name) in both the Python sidecar (`server.py`) and the diarize-setup model-download step (`cli.ts`). `use_auth_token` was deprecated in huggingface_hub 0.17 and removed in 0.24+.
+
+---
+
 ## [1.2.14] — 2026-08-01
 
 ### Fixed

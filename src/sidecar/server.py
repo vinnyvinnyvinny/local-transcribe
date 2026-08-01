@@ -30,7 +30,7 @@ def load_pipeline(token: str, mdir: Optional[str]) -> None:
 
     from pyannote.audio import Pipeline  # type: ignore
 
-    kwargs = {"use_auth_token": token}
+    kwargs = {"token": token}
     if mdir:
         # Point HuggingFace cache at the specified directory.
         os.environ.setdefault("HF_HOME", mdir)
