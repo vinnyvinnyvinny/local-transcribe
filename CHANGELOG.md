@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.16] — 2026-08-01
+
+### Changed
+
+- **README — port clarification** — API examples (`/transcribe`, `/transcribe?diarize=true`, `/health`) updated to use port `9876` (matching the Docker Compose default). A note at the top of the Transcription API section explains the port by setup: `9876` for Docker Compose and npm, `8080` for single `docker run`.
+
+---
+
 ## [1.2.15] — 2026-08-01
 
 ### Fixed

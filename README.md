@@ -58,10 +58,12 @@ Open http://localhost:8080 — drag and drop an audio file to transcribe.
 
 ## Transcription API
 
+> **Port:** Docker Compose uses `9876`. Single `docker run` uses `8080`. npm install uses `9876`.
+
 POST /transcribe with a multipart audio file:
 
 ```bash
-curl -X POST http://localhost:8080/transcribe -F "audio=@meeting.mp3"
+curl -X POST http://localhost:9876/transcribe -F "audio=@meeting.mp3"
 ```
 
 Response:
@@ -99,7 +101,7 @@ docker exec transcribe node dist/cli.js diarize-setup --token YOUR_TOKEN
 4. **Use it:**
 
 ```bash
-curl -X POST "http://localhost:8080/transcribe?diarize=true" -F "audio=@meeting.mp3"
+curl -X POST "http://localhost:9876/transcribe?diarize=true" -F "audio=@meeting.mp3"
 ```
 
 Response:
@@ -139,7 +141,7 @@ docker volume rm transcribe-models  # also removes downloaded models
 ## Health check
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:9876/health
 ```
 
 Response includes diarisation status:
