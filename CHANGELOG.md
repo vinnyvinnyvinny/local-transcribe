@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.14] — 2026-08-01
+
+### Fixed
+
+- **Diarisation setup fails in Docker with "No module named huggingface_hub"** — the Dockerfile now sets `PYTHONPATH=/usr/local/lib/python3.11/site-packages` so that Debian's system Python (`/usr/bin/python3`) can find packages installed from the `python:3.11-slim` build stage. Previously, Debian Python looked only in `dist-packages` and missed the copied packages. The same path is now also injected into the sidecar spawn environment so `pyannote.audio` is reliably importable at runtime.
+- **`diarize-setup` exits early when HF CLI login fails** — the `huggingface-cli login` step is now non-fatal. It existed only to cache the token to `~/.huggingface/token`, but the model download already passes `use_auth_token` directly, making the login redundant. A warning is printed and setup continues.
+- **Sidecar health poll timeout too short** — `pollHealth` timeout raised from 30 s to 120 s. Loading a pyannote model from cache can take 30–60 s on first startup; the old limit caused false failures even when the model was already downloaded.
+
+### Changed
+
+- **README — Docker Compose diarisation instructions added** — the Docker Compose Quick Start now includes step 4: `docker compose exec transcribe node dist/cli.js diarize-setup`. The "Speaker diarisation setup" section now shows both the docker compose and docker run variants.
+
+---
+
 ## [1.2.13] — 2026-08-01
 
 ### Fixed

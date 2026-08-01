@@ -30,6 +30,9 @@ COPY --from=node-build /app/node_modules ./node_modules
 COPY --from=node-build /app/package.json ./
 # Bundle the sidecar server script into the dist directory
 COPY src/sidecar/server.py ./dist/sidecar/server.py
+# Make packages installed from python:3.11-slim discoverable by the Debian system Python.
+# Debian's python3 searches dist-packages, not site-packages; PYTHONPATH bridges the gap.
+ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages
 # Model cache dirs and runtime config
 ENV WHISPER_CACHE_DIR=/data/whisper-models
 ENV PYANNOTE_CACHE_DIR=/data/pyannote-models

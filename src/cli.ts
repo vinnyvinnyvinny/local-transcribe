@@ -267,22 +267,29 @@ program
       process.exit(1);
     }
 
-    // Step 3: Login via huggingface-cli (try both direct and module invocation).
+    // Shared env for all Python subprocess calls: ensure packages copied from python:3.11-slim
+    // are visible to the Debian system Python, which searches dist-packages not site-packages.
+    const pyEnv = {
+      ...process.env,
+      HF_TOKEN: hfToken,
+      PYTHONPATH: `/usr/local/lib/python3.11/site-packages${process.env['PYTHONPATH'] ? `:${process.env['PYTHONPATH']}` : ''}`,
+    };
+
+    // Step 3: Login via huggingface-cli — optional, only caches token to ~/.huggingface/token.
+    // The model download (step 4) passes use_auth_token directly, so this step is not required.
     console.log('Logging in to HuggingFace Hub…');
     const loginResult = spawnSync(
       'python3',
       ['-m', 'huggingface_hub.commands.huggingface_cli', 'login', '--token', hfToken],
-      { stdio: 'inherit', env: { ...process.env, HF_TOKEN: hfToken } },
+      { stdio: 'inherit', env: pyEnv },
     );
     if (loginResult.status !== 0) {
-      // Fallback: try huggingface-cli directly.
       const fallback = spawnSync('huggingface-cli', ['login', '--token', hfToken], {
         stdio: 'inherit',
-        env: { ...process.env, HF_TOKEN: hfToken },
+        env: pyEnv,
       });
       if (fallback.status !== 0) {
-        console.error('huggingface-cli login failed. Ensure huggingface-hub is installed: pip install huggingface-hub');
-        process.exit(1);
+        console.warn('HuggingFace CLI login failed (huggingface-hub may not be on PATH). Continuing — token will be passed directly to the model download.');
       }
     }
 
@@ -296,7 +303,7 @@ program
       ],
       {
         stdio: 'inherit',
-        env: { ...process.env, HF_TOKEN: hfToken },
+        env: pyEnv,
         timeout: 600_000, // 10 min
       },
     );

@@ -92,6 +92,8 @@ export class PyannoteSidecar {
     const env = {
       ...process.env,
       HF_TOKEN: token,
+      // Ensure packages copied from python:3.11-slim are visible to the Debian system Python.
+      PYTHONPATH: `/usr/local/lib/python3.11/site-packages${process.env['PYTHONPATH'] ? `:${process.env['PYTHONPATH']}` : ''}`,
     };
 
     console.log(`[sidecar] Spawning: ${pythonCmd} ${serverPy} --port ${this.port} --model-dir ${modelDir}`);
@@ -121,7 +123,7 @@ export class PyannoteSidecar {
     this.pid = child.pid ?? null;
   }
 
-  private async pollHealth(timeoutMs = 30_000): Promise<void> {
+  private async pollHealth(timeoutMs = 120_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const url = `http://127.0.0.1:${this.port}/health`;
 
@@ -141,7 +143,7 @@ export class PyannoteSidecar {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    throw new Error('Sidecar did not become healthy within 30 seconds');
+    throw new Error('Sidecar did not become healthy within 120 seconds');
   }
 
   /**

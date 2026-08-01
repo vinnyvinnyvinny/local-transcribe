@@ -30,6 +30,16 @@ docker compose up -d
 
 Open http://localhost:9876 — drag and drop an audio file to transcribe.
 
+**4. (Optional) Download the diarisation model:**
+
+If you added a HuggingFace token in step 2, run this once to download the pyannote model (~1 GB):
+
+```bash
+docker compose exec transcribe node dist/cli.js diarize-setup
+```
+
+This takes a few minutes on first run. After it completes, the Speaker toggle in the browser UI will work.
+
 **Stop the service:**
 
 ```bash
@@ -76,6 +86,12 @@ Diarisation identifies who said what. It requires a free HuggingFace account.
 2. **Get a token** at https://huggingface.co/settings/tokens
 3. **Run setup:**
 
+For Docker Compose:
+```bash
+docker compose exec transcribe node dist/cli.js diarize-setup
+```
+
+For `docker run` (single container):
 ```bash
 docker exec transcribe node dist/cli.js diarize-setup --token YOUR_TOKEN
 ```
