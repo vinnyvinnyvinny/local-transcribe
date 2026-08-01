@@ -28,7 +28,7 @@ Get a free token at https://huggingface.co/settings/tokens, then accept model te
 docker compose up -d
 ```
 
-Open http://localhost:8080 — drag and drop an audio file to transcribe.
+Open http://localhost:9876 — drag and drop an audio file to transcribe.
 
 **Stop the service:**
 
