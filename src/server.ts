@@ -179,7 +179,7 @@ export function createServer() {
       const sc = getSidecar(config.sidecar_port ?? 9001, config.hf_token);
       const scStatus = sc.getStatus();
       // Only block on states that won't resolve by ensureReady().
-      if (scStatus === 'not_setup' || scStatus === 'python_missing' || scStatus === 'token_missing') {
+      if (scStatus === 'python_missing' || scStatus === 'token_missing') {
         return reply.status(503).send({
           error: 'Diarisation is not set up. Run: transcribe diarize-setup',
           diarization_status: scStatus,

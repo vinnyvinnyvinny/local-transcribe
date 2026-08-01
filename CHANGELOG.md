@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.23] — 2026-08-01
+
+### Fixed
+
+- **"Diarisation is not set up" on first diarize request** — the early 503 bail-out in the request handler incorrectly included `not_setup` in its block list. `not_setup` is the initial state of every new sidecar instance, so the sidecar was being rejected before it ever had a chance to start. The fix removes `not_setup` from the early bail-out; only `python_missing` and `token_missing` are states that `ensureReady()` cannot recover from on its own.
+
+---
+
 ## [1.2.22] — 2026-08-01
 
 ### Added
