@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.26] — 2026-08-02
+
+### Changed
+
+- **Diarisation timeout increased to 60 minutes** — raised from 600 s to 3600 s to accommodate longer recordings.
+
+---
+
 ## [1.2.25] — 2026-08-02
 
 ### Fixed

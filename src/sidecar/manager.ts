@@ -209,7 +209,7 @@ export class PyannoteSidecar {
       method: 'POST',
       body: new Uint8Array(audioBuffer),
       headers: { 'Content-Type': 'application/octet-stream' },
-      signal: AbortSignal.timeout(600_000), // 10-min timeout; CPU diarization runs ~10-15x real-time
+      signal: AbortSignal.timeout(3_600_000), // 60-min timeout for long files
     });
 
     if (!res.ok) {

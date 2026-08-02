@@ -1,6 +1,6 @@
 {
   "name": "@vinnyvinnyvinny/local-transcribe",
-  "version": "1.2.25",
+  "version": "1.2.26",
   "description": "Lightweight local HTTP transcription service powered by Whisper — converts audio to text via a simple REST API",
   "type": "module",
   "main": "dist/index.js",
