@@ -84,6 +84,113 @@ Response:
 | ?diarize=true | true | Speaker identification (requires setup) |
 | ?num_speakers=2 | integer | Speaker count hint (improves accuracy) |
 
+## Examples
+
+> All examples use port `9876` (Docker Compose default). Replace with `8080` for a single `docker run`.
+
+**Basic transcription**
+```bash
+curl -X POST http://localhost:9876/transcribe \
+  -F "audio=@recording.mp3"
+```
+
+**Higher accuracy (larger model)**
+```bash
+curl -X POST "http://localhost:9876/transcribe?model=whisper-large-v3" \
+  -F "audio=@recording.mp3"
+```
+
+**Force a language (skip auto-detection)**
+```bash
+curl -X POST "http://localhost:9876/transcribe?language=fr" \
+  -F "audio=@recording.mp3"
+```
+
+**Word-level timestamps**
+```bash
+curl -X POST "http://localhost:9876/transcribe?timestamps=word" \
+  -F "audio=@recording.mp3"
+```
+```json
+{
+  "transcript": "Hello world",
+  "words": [
+    { "word": "Hello", "start": 0.0, "end": 0.42 },
+    { "word": "world", "start": 0.44, "end": 0.78 }
+  ]
+}
+```
+
+**Speaker diarisation** _(requires setup — see below)_
+```bash
+curl -X POST "http://localhost:9876/transcribe?diarize=true" \
+  -F "audio=@meeting.mp3"
+```
+```json
+{
+  "segments": [
+    { "speaker": "Speaker_1", "start": 0.0,  "end": 5.2, "text": "Hello, how are you?" },
+    { "speaker": "Speaker_2", "start": 5.5,  "end": 8.1, "text": "Fine, thanks." }
+  ],
+  "speakers_detected": 2
+}
+```
+
+**Diarisation with a speaker count hint** _(improves accuracy when you know how many speakers)_
+```bash
+curl -X POST "http://localhost:9876/transcribe?diarize=true&num_speakers=2" \
+  -F "audio=@interview.mp3"
+```
+
+**Diarisation + word timestamps**
+```bash
+curl -X POST "http://localhost:9876/transcribe?diarize=true&timestamps=word" \
+  -F "audio=@meeting.mp3"
+```
+```json
+{
+  "segments": [
+    {
+      "speaker": "Speaker_1",
+      "start": 0.0,
+      "end": 5.2,
+      "text": "Hello, how are you?",
+      "words": [
+        { "word": "Hello,",  "start": 0.0,  "end": 0.42 },
+        { "word": "how",     "start": 0.44, "end": 0.60 },
+        { "word": "are",     "start": 0.61, "end": 0.72 },
+        { "word": "you?",    "start": 0.73, "end": 1.10 }
+      ]
+    }
+  ]
+}
+```
+
+**Streaming (Server-Sent Events)** — get progress updates in real time
+```bash
+curl -N -X POST "http://localhost:9876/transcribe?stream=true" \
+  -F "audio=@recording.mp3"
+```
+```
+data: {"status":"transcribing","progress":0.45}
+data: {"status":"complete","transcript":"Hello world","duration_ms":3200}
+```
+
+**Keep the model in memory** — useful when sending many files in quick succession
+```bash
+# Keep model loaded for 5 minutes between requests
+curl -X POST "http://localhost:9876/transcribe?model_ttl=300" \
+  -F "audio=@recording.mp3"
+```
+
+**Combine options freely**
+```bash
+curl -X POST "http://localhost:9876/transcribe?model=whisper-large-v3&language=en&diarize=true&num_speakers=3&timestamps=word" \
+  -F "audio=@meeting.mp3"
+```
+
+---
+
 ## Speaker diarisation setup (one-time)
 
 Diarisation identifies who said what. It requires a free HuggingFace account.

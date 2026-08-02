@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.28] — 2026-08-02
+
+### Added
+
+- **README Examples section** — comprehensive curl examples covering basic transcription, model selection, language override, word timestamps, speaker diarisation, diarisation with speaker count hint, diarisation + word timestamps combined, streaming (SSE), model TTL, and combining multiple options.
+
+---
+
 ## [1.2.27] — 2026-08-02
 
 ### Fixed
