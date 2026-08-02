@@ -1,4 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
+import { request } from 'http';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -196,28 +197,60 @@ export class PyannoteSidecar {
    * @param numSpeakers Optional speaker count hint.
    */
   async diarize(audioBuffer: Buffer, numSpeakers?: number): Promise<DiarizeResponse> {
-    const url = new URL(`http://127.0.0.1:${this.port}/diarize`);
-    if (numSpeakers !== undefined) {
-      url.searchParams.set('num_speakers', String(numSpeakers));
-    }
+    // Use http.request rather than fetch — undici's global headersTimeout (300 s default)
+    // fires before long diarization jobs complete, producing UND_ERR_HEADERS_TIMEOUT.
+    // http.request has no implicit headers timeout; our manual setTimeout controls the limit.
+    const TIMEOUT_MS = 3_600_000; // 60 minutes
+    const path = numSpeakers !== undefined
+      ? `/diarize?num_speakers=${encodeURIComponent(String(numSpeakers))}`
+      : '/diarize';
 
-    // Send raw bytes rather than multipart — python-multipart 0.0.20+ has a default
-    // max_file_size of ~5 MB which causes a mid-upload 400 on larger files, manifesting
-    // as EPIPE on this side. Raw body has no such limit.
-    // Buffer<ArrayBufferLike> doesn't satisfy BodyInit; Uint8Array does.
-    const res = await fetch(url.toString(), {
-      method: 'POST',
-      body: new Uint8Array(audioBuffer),
-      headers: { 'Content-Type': 'application/octet-stream' },
-      signal: AbortSignal.timeout(3_600_000), // 60-min timeout for long files
+    const responseText = await new Promise<string>((resolve, reject) => {
+      let done = false;
+      const finish = (err: Error | null, value?: string) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        if (err) reject(err); else resolve(value!);
+      };
+
+      const timer = setTimeout(() => {
+        req.destroy();
+        finish(new Error('Sidecar diarize timed out after 60 minutes'));
+      }, TIMEOUT_MS);
+
+      const req = request(
+        {
+          hostname: '127.0.0.1',
+          port: this.port,
+          path,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': audioBuffer.byteLength,
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk: Buffer) => chunks.push(chunk));
+          res.on('end', () => {
+            const text = Buffer.concat(chunks).toString('utf-8');
+            if (res.statusCode !== 200) {
+              finish(new Error(`Sidecar diarize failed (HTTP ${res.statusCode}): ${text}`));
+            } else {
+              finish(null, text);
+            }
+          });
+          res.on('error', (err: Error) => finish(err));
+        },
+      );
+
+      req.on('error', (err: Error) => finish(err));
+      req.write(audioBuffer);
+      req.end();
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Sidecar diarize failed (HTTP ${res.status}): ${text}`);
-    }
-
-    return res.json() as Promise<DiarizeResponse>;
+    return JSON.parse(responseText) as DiarizeResponse;
   }
 
   /** Send SIGTERM to the sidecar process and clear state. */

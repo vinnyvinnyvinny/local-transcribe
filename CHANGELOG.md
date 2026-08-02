@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.27] — 2026-08-02
+
+### Fixed
+
+- **Diarisation timeout (UND_ERR_HEADERS_TIMEOUT) on long audio** — undici (Node.js's built-in fetch) has a separate `headersTimeout` of 300 seconds that fires when the server hasn't returned response headers yet. For long pyannote jobs this triggers before the `AbortSignal.timeout` we set. Replaced `fetch` in `PyannoteSidecar.diarize()` with Node.js's `http.request`, which has no implicit headers timeout. A manual `setTimeout` at 60 minutes enforces the actual limit.
+
+---
+
 ## [1.2.26] — 2026-08-02
 
 ### Changed
