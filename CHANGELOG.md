@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.25] — 2026-08-02
+
+### Fixed
+
+- **Diarisation timeout on files longer than ~8 minutes** — the `AbortSignal.timeout` on the sidecar diarize request was 120 seconds. pyannote on CPU processes at roughly 10–15× real-time, so an 11-minute audio file takes ~110–165 s and clips the old limit. Increased to 600 seconds (10 minutes), covering audio up to ~60 minutes on a typical CPU.
+
+---
+
 ## [1.2.24] — 2026-08-01
 
 ### Fixed
